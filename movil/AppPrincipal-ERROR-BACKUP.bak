@@ -23,7 +23,6 @@ import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NinosHome from "../componentes/ninos/NinosHome";
 import Niveles from "../componentes/ninos/Niveles";
-import Camara from "../componentes/ninos/Camara";
 
 
 type Perfil = "nino" | "adolescente" | "adulto" | "";
@@ -42,8 +41,7 @@ type PantallaNino =
 
   | "escuchar"
 
-  | "progreso"
-  | "camara";
+  | "progreso";
 
 
 
@@ -437,16 +435,12 @@ function opcionesConRespuesta(
 
     new Set([correcta, ...otras])
 
-  ).slice(0, 3);
+  );
 
-  // Mezclamos las opciones para que la respuesta correcta
-  // no aparezca siempre en la primera posición.
-  for (let i = todas.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [todas[i], todas[j]] = [todas[j], todas[i]];
-  }
 
-  return todas;
+
+  return todas.slice(0, 3);
+
 }
 
 
@@ -459,567 +453,808 @@ function opcionesConRespuesta(
 
 
 
-function crearEjercicio(numero: number, variante = 0): Ejercicio {
+function crearEjercicio(numero: number): Ejercicio {
+
   const palabra = obtenerPalabra(numero);
+
+
+
+  /* -------------------------------------------------------
+
+     NIVELES 1 - 5
+
+     IDENTIFICAR PALABRAS
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 5) {
+
+    let opciones = ["GATO", "PERRO", "PATO"];
+
+
+
+    if (palabra === "CASA") {
+
+      opciones = ["CASA", "GATO", "LUNA"];
+
+    }
+
+
+
+    if (palabra === "MESA") {
+
+      opciones = ["MESA", "PATO", "SOL"];
+
+    }
+
+
+
+    if (palabra === "PATO") {
+
+      opciones = ["PATO", "GATO", "PEZ"];
+
+    }
+
+
+
+    if (palabra === "LUNA") {
+
+      opciones = ["LUNA", "CASA", "PEZ"];
+
+    }
+
+
+
+    return {
+
+      tipo: "palabra",
+
+      pregunta: "Encontrá la palabra correcta:",
+
+      texto: palabra,
+
+      opciones,
+
+      correcta: palabra,
+
+      ayuda: "Tocá la palabra que aparece arriba.",
+
+    };
+
+  }
+
+
+
+  /* -------------------------------------------------------
+
+     NIVELES 6 - 10
+
+     IDENTIFICAR LETRA
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 10) {
+
+    const posicion =
+
+      (numero - 6) % palabra.length;
+
+
+
+    const letra = palabra[posicion];
+
+
+
+    const otras = ["A", "E", "O", "I", "U", "M", "P"];
+
+
+
+    return {
+
+      tipo: "letra",
+
+      pregunta: `¿Qué letra aparece en ${palabra}?`,
+
+      texto: palabra,
+
+      opciones: opcionesConRespuesta(
+
+        letra,
+
+        otras.filter((letraOtra) => letraOtra !== letra)
+
+      ),
+
+      correcta: letra,
+
+      ayuda:
+
+        "Buscá la letra dentro de la palabra.",
+
+    };
+
+  }
+
+
+
+  /* -------------------------------------------------------
+
+     NIVELES 11 - 20
+
+     COMPLETAR PALABRA
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 20) {
+
+    const posicion =
+
+      (numero - 11) % palabra.length;
+
+
+
+    const letra = palabra[posicion];
+
+
+
+    const incompleta =
+
+      palabra.substring(0, posicion) +
+
+      "_" +
+
+      palabra.substring(posicion + 1);
+
+
+
+    const otras = ["A", "E", "O", "I", "U"];
+
+
+
+    return {
+
+      tipo: "completar",
+
+      pregunta: "Completá la palabra:",
+
+      texto: incompleta,
+
+      opciones: opcionesConRespuesta(
+
+        letra,
+
+        otras.filter((otra) => otra !== letra)
+
+      ),
+
+      correcta: letra,
+
+      ayuda:
+
+        "Elegí la letra que falta.",
+
+    };
+
+  }
+
+
+
+  /* -------------------------------------------------------
+
+     NIVELES 21 - 40
+
+     PRIMERA PALABRA DE UNA FRASE
+
+  ------------------------------------------------------- */
+
+
+
   const frase = obtenerFrase(numero);
 
-  /* =========================================================
-     NIVELES 1 - 10
-     RECONOCER PALABRAS
-  ========================================================= */
-  if (numero <= 10) {
-    const ejercicios = [
-      { palabra: "GATO", opciones: ["GATO", "PATO", "CASA"], ayuda: "Mirá bien la palabra y elegí la misma." },
-      { palabra: "CASA", opciones: ["MESA", "CASA", "LUNA"], ayuda: "Buscá CASA entre las opciones." },
-      { palabra: "PATO", opciones: ["PATO", "GATO", "PEZ"], ayuda: "Leé despacio y elegí PATO." },
-      { palabra: "LUNA", opciones: ["LUNA", "CASA", "MESA"], ayuda: "Buscá la palabra LUNA." },
-      { palabra: "PELOTA", opciones: ["PELOTA", "PELO", "PALOMA"], ayuda: "Mirá todas las letras antes de responder." },
-      { palabra: "PERRO", opciones: ["PERRO", "GATO", "PATO"], ayuda: "Encontrá la palabra PERRO." },
-      { palabra: "FLOR", opciones: ["FLOR", "SOL", "PAN"], ayuda: "Buscá FLOR entre las opciones." },
-      { palabra: "MESA", opciones: ["CASA", "MESA", "LUNA"], ayuda: "Leé lentamente la palabra." },
-      { palabra: "SOL", opciones: ["SOL", "OSO", "PEZ"], ayuda: "Elegí la palabra que aparece arriba." },
-      { palabra: "OSO", opciones: ["OSO", "SOL", "GATO"], ayuda: "Este es el último desafío de esta etapa." },
-    ];
-    const ejercicio = ejercicios[(numero - 1 + variante) % ejercicios.length];
-    return {
-      tipo: "palabra",
-      pregunta: numero === 1
-        ? "¡Empecemos! Encontrá la palabra correcta:"
-        : numero === 10
-        ? "🏆 ¡Excelente! Último desafío de esta etapa:"
-        : "Encontrá la palabra correcta:",
-      texto: ejercicio.palabra,
-      opciones: ejercicio.opciones,
-      correcta: ejercicio.palabra,
-      ayuda: ejercicio.ayuda,
-    };
-  }
 
-  /* =========================================================
-     NIVELES 11 - 20
-     ENCONTRAR LETRAS
-  ========================================================= */
-  if (numero <= 20) {
-    const ejercicios = [
-      { palabra: "GATO", letra: "G" },
-      { palabra: "CASA", letra: "S" },
-      { palabra: "PATO", letra: "T" },
-      { palabra: "LUNA", letra: "N" },
-      { palabra: "PELOTA", letra: "P" },
-      { palabra: "PERRO", letra: "R" },
-      { palabra: "FLOR", letra: "L" },
-      { palabra: "MESA", letra: "M" },
-      { palabra: "SOL", letra: "O" },
-      { palabra: "OSO", letra: "S" },
-    ];
-    const ejercicio = ejercicios[(numero - 11 + variante) % ejercicios.length];
-    return {
-      tipo: "letra",
-      pregunta: "¿Qué letra aparece en esta palabra?",
-      texto: ejercicio.palabra,
-      opciones: opcionesConRespuesta(
-        ejercicio.letra,
-        ["A", "E", "I", "O", "U", "M", "P", "S", "T"].filter(
-          (letra) => letra !== ejercicio.letra
-        )
-      ),
-      correcta: ejercicio.letra,
-      ayuda: "Mirá la palabra con calma y buscá la letra.",
-    };
-  }
 
-  /* =========================================================
-     NIVELES 21 - 30
-     COMPLETAR PALABRAS
-  ========================================================= */
-  if (numero <= 30) {
-    const ejercicios = [
-      { palabra: "GATO", posicion: 0 },
-      { palabra: "CASA", posicion: 1 },
-      { palabra: "PATO", posicion: 2 },
-      { palabra: "LUNA", posicion: 3 },
-      { palabra: "PELOTA", posicion: 0 },
-      { palabra: "PERRO", posicion: 1 },
-      { palabra: "FLOR", posicion: 2 },
-      { palabra: "MESA", posicion: 0 },
-      { palabra: "PEZ", posicion: 1 },
-      { palabra: "OSO", posicion: 2 },
-    ];
-    const ejercicio = ejercicios[(numero - 21 + variante) % ejercicios.length];
-    const letra = ejercicio.palabra[ejercicio.posicion];
-    const incompleta =
-      ejercicio.palabra.substring(0, ejercicio.posicion) +
-      "_" +
-      ejercicio.palabra.substring(ejercicio.posicion + 1);
-    return {
-      tipo: "completar",
-      pregunta: "Completá la palabra:",
-      texto: incompleta,
-      opciones: opcionesConRespuesta(
-        letra,
-        ["A", "E", "I", "O", "U", "P", "S", "T", "L"].filter(
-          (otra) => otra !== letra
-        )
-      ),
-      correcta: letra,
-      ayuda: "Elegí la letra que falta para formar la palabra.",
-    };
-  }
-
-  /* =========================================================
-     NIVELES 31 - 40
-     FRASES CORTAS
-  ========================================================= */
   if (numero <= 40) {
-    const ejercicios = [
-      { frase: "El gato duerme.", correcta: "gato" },
-      { frase: "La niña lee.", correcta: "niña" },
-      { frase: "El perro corre.", correcta: "perro" },
-      { frase: "La pelota rueda.", correcta: "pelota" },
-      { frase: "El niño juega.", correcta: "niño" },
-      { frase: "La mamá cocina.", correcta: "mamá" },
-      { frase: "El papá lee.", correcta: "papá" },
-      { frase: "El gato come.", correcta: "gato" },
-      { frase: "La niña salta.", correcta: "niña" },
-      { frase: "El perro duerme.", correcta: "perro" },
-    ];
-    const ejercicio = ejercicios[(numero - 31 + variante) % ejercicios.length];
-    return {
-      tipo: "palabra",
-      pregunta: "¿Cuál de estas palabras aparece en la frase?",
-      texto: ejercicio.frase,
-      opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["casa", "árbol", "escuela", "pelota", "amigo"].filter(
-          (otra) => otra !== ejercicio.correcta
-        )
-      ),
-      correcta: ejercicio.correcta,
-      ayuda: "Leé la frase despacio y buscá la palabra.",
-    };
-  }
 
-  /* =========================================================
-     NIVELES 41 - 50
-     COMPRENSIÓN SENCILLA
-  ========================================================= */
-  if (numero <= 50) {
-    const ejercicios = [
-      { frase: "El gato duerme en la cama.", pregunta: "¿Qué animal aparece?", correcta: "gato" },
-      { frase: "La niña lee un libro.", pregunta: "¿Quién lee?", correcta: "niña" },
-      { frase: "El perro corre en el parque.", pregunta: "¿Qué animal corre?", correcta: "perro" },
-      { frase: "El niño juega con una pelota.", pregunta: "¿Con qué juega?", correcta: "pelota" },
-      { frase: "La mamá cocina en la casa.", pregunta: "¿Quién cocina?", correcta: "mamá" },
-      { frase: "El papá lee un libro.", pregunta: "¿Qué hace el papá?", correcta: "lee" },
-      { frase: "La niña tiene una flor.", pregunta: "¿Qué tiene la niña?", correcta: "flor" },
-      { frase: "El gato toma agua.", pregunta: "¿Qué hace el gato?", correcta: "toma" },
-      { frase: "El perro juega con el niño.", pregunta: "¿Con quién juega el perro?", correcta: "niño" },
-      { frase: "La familia come en la mesa.", pregunta: "¿Dónde come la familia?", correcta: "mesa" },
-    ];
-    const ejercicio = ejercicios[(numero - 41 + variante) % ejercicios.length];
-    return {
-      tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.frase,
-      opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["gato", "perro", "niña", "niño", "pelota", "casa", "flor", "lee", "toma", "mesa"].filter(
-          (otra) => otra !== ejercicio.correcta
-        )
-      ),
-      correcta: ejercicio.correcta,
-      ayuda: "Leé toda la frase antes de elegir.",
-    };
-  }
+    const palabras = frase
 
-  /* =========================================================
-     NIVELES 51 - 60
-     PALABRAS MÁS LARGAS
-  ========================================================= */
-  if (numero <= 60) {
-    const ejercicios = [
-      { palabra: "PELOTA", posicion: 2 },
-      { palabra: "ESCUELA", posicion: 1 },
-      { palabra: "AMIGO", posicion: 3 },
-      { palabra: "FAMILIA", posicion: 4 },
-      { palabra: "CAMINO", posicion: 2 },
-      { palabra: "VENTANA", posicion: 3 },
-      { palabra: "JUEGO", posicion: 1 },
-      { palabra: "LIBRO", posicion: 2 },
-      { palabra: "PERRO", posicion: 3 },
-      { palabra: "GATO", posicion: 1 },
-    ];
-    const ejercicio = ejercicios[(numero - 51 + variante) % ejercicios.length];
-    const letra = ejercicio.palabra[ejercicio.posicion];
-    const incompleta =
-      ejercicio.palabra.substring(0, ejercicio.posicion) +
-      "_" +
-      ejercicio.palabra.substring(ejercicio.posicion + 1);
-    return {
-      tipo: "completar",
-      pregunta: "Completá esta palabra:",
-      texto: incompleta,
-      opciones: opcionesConRespuesta(
-        letra,
-        ["A", "E", "I", "O", "U", "M", "N", "L", "R", "T"].filter(
-          (otra) => otra !== letra
-        )
-      ),
-      correcta: letra,
-      ayuda: "Mirá las letras que están alrededor del espacio.",
-    };
-  }
+      .replace(/[.,!?]/g, "")
 
-  /* =========================================================
-     NIVELES 61 - 70
-     COMPRENSIÓN CON FRASES MÁS LARGAS
-  ========================================================= */
-  if (numero <= 70) {
-    const ejercicios = [
-      { frase: "Martina fue al parque con su mamá.", pregunta: "¿Con quién fue Martina al parque?", correcta: "mamá" },
-      { frase: "Tomás llevó su pelota a la escuela.", pregunta: "¿Qué llevó Tomás?", correcta: "pelota" },
-      { frase: "El perro encontró una pelota en el jardín.", pregunta: "¿Qué encontró el perro?", correcta: "pelota" },
-      { frase: "Sofía leyó un libro antes de dormir.", pregunta: "¿Qué leyó Sofía?", correcta: "libro" },
-      { frase: "La familia salió a caminar por el parque.", pregunta: "¿Qué hizo la familia?", correcta: "caminar" },
-      { frase: "Pedro guardó sus juguetes en una caja.", pregunta: "¿Dónde guardó los juguetes?", correcta: "caja" },
-      { frase: "La niña encontró una flor junto al árbol.", pregunta: "¿Qué encontró la niña?", correcta: "flor" },
-      { frase: "El niño preparó su mochila para la escuela.", pregunta: "¿Qué preparó el niño?", correcta: "mochila" },
-      { frase: "Ana escuchó una historia antes de acostarse.", pregunta: "¿Qué escuchó Ana?", correcta: "historia" },
-      { frase: "Lucas ordenó sus libros después de estudiar.", pregunta: "¿Qué ordenó Lucas?", correcta: "libros" },
-    ];
-    const ejercicio = ejercicios[(numero - 61 + variante) % ejercicios.length];
-    return {
-      tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.frase,
-      opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["mamá", "papá", "pelota", "libro", "caminar", "caja", "flor", "mochila", "historia", "libros", "escuela", "parque"].filter(
-          (otra) => otra !== ejercicio.correcta
-        )
-      ),
-      correcta: ejercicio.correcta,
-      ayuda: "Leé toda la frase. No hace falta responder rápido.",
-    };
-  }
+      .split(" ");
 
-  /* =========================================================
-     NIVELES 71 - 90
-     ORDENAR Y RECONOCER FRASES
-  ========================================================= */
 
-  if (numero <= 90) {
-    const ejercicios = [
-      { frase: "El gato duerme en la cama.", correcta: "El", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "La niña lee un libro.", correcta: "La", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "Mi perro corre en el parque.", correcta: "Mi", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "Tomás juega con una pelota.", correcta: "Tomás", pregunta: "¿Quién aparece primero en la frase?" },
-      { frase: "La familia sale de paseo.", correcta: "La", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "Sofía prepara su mochila.", correcta: "Sofía", pregunta: "¿Quién aparece primero en la frase?" },
-      { frase: "El niño abre la ventana.", correcta: "El", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "Mi mamá cocina la cena.", correcta: "Mi", pregunta: "¿Con qué palabra empieza la frase?" },
-      { frase: "Lucas ordena sus juguetes.", correcta: "Lucas", pregunta: "¿Quién aparece primero en la frase?" },
-      { frase: "La maestra explica la tarea.", correcta: "La", pregunta: "¿Con qué palabra empieza la frase?" },
+
+    const primera = palabras[0];
+
+
+
+    const otras = [
+
+      palabras[1] || "",
+
+      palabras[palabras.length - 1] || "",
+
+      "El",
+
+      "La",
+
     ];
 
-    const ejercicio = ejercicios[(numero - 71 + variante) % ejercicios.length];
+
 
     return {
+
       tipo: "ordenar",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.frase,
+
+      pregunta:
+
+        "¿Con qué palabra empieza la frase?",
+
+      texto: frase,
+
       opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["El", "La", "Mi", "Tomás", "Sofía", "Lucas", "niño", "familia"]
+
+        primera,
+
+        otras.filter(
+
+          (otra) => otra !== primera && otra !== ""
+
+        )
+
       ),
-      correcta: ejercicio.correcta,
-      ayuda: "Leé la frase de izquierda a derecha y buscá la primera palabra.",
+
+      correcta: primera,
+
+      ayuda:
+
+        "Mirá la primera palabra de la frase.",
+
     };
+
   }
 
 
-  /* =========================================================
-     NIVELES 91 - 110
-     COMPLETAR PALABRAS INTERMEDIAS
-  ========================================================= */
 
-  if (numero <= 110) {
-    const ejercicios = [
-      { palabra: "MARIPOSA", posicion: 1 },
-      { palabra: "ESCUELA", posicion: 2 },
-      { palabra: "BICICLETA", posicion: 3 },
-      { palabra: "CUADERNO", posicion: 4 },
-      { palabra: "VENTANA", posicion: 2 },
-      { palabra: "CAMINO", posicion: 3 },
-      { palabra: "AMIGO", posicion: 1 },
-      { palabra: "FAMILIA", posicion: 4 },
-      { palabra: "JARDIN", posicion: 2 },
-      { palabra: "AVENTURA", posicion: 5 },
+  /* -------------------------------------------------------
+
+     NIVELES 41 - 70
+
+     PALABRA QUE APARECE
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 70) {
+
+    const palabras = frase
+
+      .replace(/[.,!?]/g, "")
+
+      .split(" ");
+
+
+
+    const posicion =
+
+      (numero - 41) % palabras.length;
+
+
+
+    const correcta = palabras[posicion];
+
+
+
+    const otras = [
+
+      "casa",
+
+      "árbol",
+
+      "pelota",
+
+      "escuela",
+
+      "amigo",
+
+      "parque",
+
     ];
 
-    const ejercicio = ejercicios[(numero - 91 + variante) % ejercicios.length];
-    const letra = ejercicio.palabra[ejercicio.posicion];
-    const incompleta =
-      ejercicio.palabra.substring(0, ejercicio.posicion) +
-      "_" +
-      ejercicio.palabra.substring(ejercicio.posicion + 1);
+
 
     return {
-      tipo: "completar",
-      pregunta: "Completá la palabra:",
-      texto: incompleta,
+
+      tipo: "palabra",
+
+      pregunta:
+
+        "¿Cuál de estas palabras aparece en la frase?",
+
+      texto: frase,
+
       opciones: opcionesConRespuesta(
-        letra,
-        ["A", "E", "I", "O", "U", "B", "C", "M", "N", "R", "T", "L"]
+
+        correcta,
+
+        otras
+
       ),
-      correcta: letra,
-      ayuda: "Observá las letras que están antes y después del espacio.",
+
+      correcta,
+
+      ayuda:
+
+        "Leé la frase y buscá una de sus palabras.",
+
     };
+
   }
 
 
-  /* =========================================================
-     NIVELES 111 - 130
-     COMPRENSIÓN INTERMEDIA
-  ========================================================= */
+
+  /* -------------------------------------------------------
+
+     NIVELES 71 - 100
+
+     COMPRENSIÓN
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 100) {
+
+    let pregunta =
+
+      "¿Qué ocurre en la frase?";
+
+
+
+    let correcta = "lee";
+
+
+
+    if (frase.includes("perro")) {
+
+      pregunta = "¿Qué animal aparece?";
+
+      correcta = "perro";
+
+    } else if (frase.includes("niña")) {
+
+      pregunta = "¿Quién aparece?";
+
+      correcta = "niña";
+
+    } else if (frase.includes("amigo")) {
+
+      pregunta = "¿Quién aparece?";
+
+      correcta = "amigo";
+
+    } else if (frase.includes("familia")) {
+
+      pregunta = "¿Quién aparece?";
+
+      correcta = "familia";
+
+    } else if (frase.includes("gato")) {
+
+      pregunta = "¿Qué animal aparece?";
+
+      correcta = "gato";
+
+    }
+
+
+
+    return {
+
+      tipo: "comprension",
+
+      pregunta,
+
+      texto: frase,
+
+      opciones: opcionesConRespuesta(
+
+        correcta,
+
+        [
+
+          "mesa",
+
+          "bicicleta",
+
+          "escuela",
+
+          "árbol",
+
+        ]
+
+      ),
+
+      correcta,
+
+      ayuda:
+
+        "Leé la frase con calma y buscá la respuesta.",
+
+    };
+
+  }
+
+
+
+  /* -------------------------------------------------------
+
+     NIVELES 101 - 130
+
+     COMPLETAR PALABRAS MÁS LARGAS
+
+  ------------------------------------------------------- */
+
+
 
   if (numero <= 130) {
-    const ejercicios = [
-      { texto: "Martina fue al parque porque quería jugar con sus amigos.", pregunta: "¿Por qué fue Martina al parque?", correcta: "jugar" },
-      { texto: "Pedro guardó el libro en su mochila antes de salir.", pregunta: "¿Dónde guardó Pedro el libro?", correcta: "mochila" },
-      { texto: "La maestra escribió una palabra nueva en el pizarrón.", pregunta: "¿Qué escribió la maestra?", correcta: "palabra" },
-      { texto: "Sofía tomó agua después de correr durante mucho tiempo.", pregunta: "¿Qué tomó Sofía?", correcta: "agua" },
-      { texto: "El perro encontró una pelota debajo de la mesa.", pregunta: "¿Qué encontró el perro?", correcta: "pelota" },
-      { texto: "Lucas ordenó sus juguetes porque quería encontrar su auto.", pregunta: "¿Por qué ordenó sus juguetes?", correcta: "encontrar" },
-      { texto: "Ana llevó un paraguas porque estaba por llover.", pregunta: "¿Qué llevó Ana?", correcta: "paraguas" },
-      { texto: "El niño terminó la tarea y después salió a jugar.", pregunta: "¿Qué hizo después de terminar la tarea?", correcta: "jugar" },
-      { texto: "La familia preparó la mesa antes de comenzar a comer.", pregunta: "¿Qué preparó la familia?", correcta: "mesa" },
-      { texto: "Tomás leyó el cuento dos veces para entenderlo mejor.", pregunta: "¿Cuántas veces leyó el cuento?", correcta: "dos" },
+
+    const posicion =
+
+      (numero - 101) % palabra.length;
+
+
+
+    const letra = palabra[posicion];
+
+
+
+    const incompleta =
+
+      palabra.substring(0, posicion) +
+
+      "_" +
+
+      palabra.substring(posicion + 1);
+
+
+
+    const letrasAlternativas = [
+
+      "A",
+
+      "E",
+
+      "I",
+
+      "O",
+
+      "U",
+
+      "R",
+
+      "N",
+
+      "L",
+
+      "M",
+
     ];
 
-    const ejercicio = ejercicios[(numero - 111 + variante) % ejercicios.length];
+
 
     return {
-      tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.texto,
+
+      tipo: "completar",
+
+      pregunta:
+
+        "Completá la palabra más difícil:",
+
+      texto: incompleta,
+
       opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["jugar", "mochila", "palabra", "agua", "pelota", "encontrar", "paraguas", "mesa", "dos", "correr"]
+
+        letra,
+
+        letrasAlternativas
+
       ),
-      correcta: ejercicio.correcta,
-      ayuda: "Leé todo el texto. La respuesta está dentro de la oración.",
+
+      correcta: letra,
+
+      ayuda:
+
+        "Mirá las letras que están antes y después del espacio.",
+
     };
+
   }
 
 
-  /* =========================================================
-     NIVELES 131 - 150
-     COMPRENSIÓN INTERMEDIA / DIFÍCIL
-  ========================================================= */
 
-  if (numero <= 150) {
-    const ejercicios = [
-      { texto: "Julia preparó su mochila la noche anterior para no llegar tarde a la escuela.", pregunta: "¿Por qué preparó Julia la mochila antes?", correcta: "no llegar tarde" },
-      { texto: "Martín buscó sus lentes por toda la casa hasta encontrarlos sobre la mesa.", pregunta: "¿Dónde encontró Martín los lentes?", correcta: "sobre la mesa" },
-      { texto: "El equipo practicó durante una hora antes de comenzar el partido.", pregunta: "¿Qué hizo el equipo antes del partido?", correcta: "practicó" },
-      { texto: "Camila cerró la ventana porque comenzó a entrar mucho viento.", pregunta: "¿Por qué cerró Camila la ventana?", correcta: "por el viento" },
-      { texto: "Nicolás llevó un libro a la biblioteca y luego eligió otro para leer en casa.", pregunta: "¿Qué eligió Nicolás para llevar a casa?", correcta: "otro libro" },
-      { texto: "La familia salió temprano para llegar a tiempo al cumpleaños de la abuela.", pregunta: "¿Por qué salió temprano la familia?", correcta: "llegar a tiempo" },
-      { texto: "Valentina ordenó los colores por grupos antes de comenzar su dibujo.", pregunta: "¿Qué hizo antes de dibujar?", correcta: "ordenó los colores" },
-      { texto: "El alumno leyó nuevamente la consigna porque no había entendido la primera vez.", pregunta: "¿Por qué volvió a leer?", correcta: "no había entendido" },
-      { texto: "Santiago dejó la bicicleta adentro porque comenzó a llover.", pregunta: "¿Por qué dejó la bicicleta adentro?", correcta: "porque llovía" },
-      { texto: "Lucía terminó de estudiar y guardó todos sus materiales en la mochila.", pregunta: "¿Qué hizo después de estudiar?", correcta: "guardó los materiales" },
-    ];
+  /* -------------------------------------------------------
 
-    const ejercicio = ejercicios[(numero - 131 + variante) % ejercicios.length];
+     NIVELES 131 - 160
+
+     COMPRENSIÓN MÁS LARGA
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 160) {
+
+    let pregunta =
+
+      "¿Qué hizo la persona?";
+
+
+
+    let correcta =
+
+      "terminó";
+
+
+
+    if (frase.includes("terminó")) {
+
+      pregunta =
+
+        "¿Qué hizo la niña?";
+
+      correcta = "terminó";
+
+    } else if (frase.includes("encontró")) {
+
+      pregunta =
+
+        "¿Qué hizo el perro?";
+
+      correcta = "encontró";
+
+    } else if (frase.includes("organizó")) {
+
+      pregunta =
+
+        "¿Qué hizo el amigo?";
+
+      correcta = "organizó";
+
+    } else if (frase.includes("decidió")) {
+
+      pregunta =
+
+        "¿Qué hizo la familia?";
+
+      correcta = "decidió";
+
+    } else if (frase.includes("leyó")) {
+
+      pregunta =
+
+        "¿Qué hizo el estudiante?";
+
+      correcta = "leyó";
+
+    }
+
+
 
     return {
+
       tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.texto,
+
+      pregunta,
+
+      texto: frase,
+
       opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["practicó", "por el viento", "otro libro", "llegar a tiempo", "ordenó los colores", "no había entendido", "porque llovía", "guardó los materiales", "sobre la mesa", "dibujó"]
+
+        correcta,
+
+        [
+
+          "corrió",
+
+          "durmió",
+
+          "saltó",
+
+          "jugó",
+
+        ]
+
       ),
-      correcta: ejercicio.correcta,
-      ayuda: "Buscá la información exacta. Algunas respuestas son parecidas entre sí.",
+
+      correcta,
+
+      ayuda:
+
+        "Leé toda la frase antes de responder.",
+
     };
+
   }
 
 
-  /* =========================================================
-     NIVELES 151 - 170
-     ESCUCHAR Y DISCRIMINAR PALABRAS
-  ========================================================= */
 
-  if (numero <= 170) {
-    const ejercicios = [
-      { palabra: "ESCUELA", distractores: ["ESCUELA", "ESCALERA", "ESQUINA"] },
-      { palabra: "MARIPOSA", distractores: ["MARIPOSA", "MARINERO", "MARIPOSAS"] },
-      { palabra: "VENTANA", distractores: ["VENTANA", "VENTANA", "VENTURA"] },
-      { palabra: "BICICLETA", distractores: ["BICICLETA", "BICICLETA", "BIBLIOTECA"] },
-      { palabra: "CUADERNO", distractores: ["CUADERNO", "CUADRADO", "CUIDADO"] },
-      { palabra: "FAMILIA", distractores: ["FAMILIA", "FANTASÍA", "FARMACIA"] },
-      { palabra: "AVENTURA", distractores: ["AVENTURA", "VENTANA", "AVENTURA"] },
-      { palabra: "JARDINERO", distractores: ["JARDINERO", "JARDÍN", "JUGUETERO"] },
-      { palabra: "APRENDIZAJE", distractores: ["APRENDIZAJE", "APRENDER", "APROBACIÓN"] },
-      { palabra: "ESCRITURA", distractores: ["ESCRITURA", "ESTRUCTURA", "ESCULTURA"] },
-    ];
+  /* -------------------------------------------------------
 
-    const ejercicio = ejercicios[(numero - 151 + variante) % ejercicios.length];
+     NIVELES 161 - 180
+
+     ESCUCHAR
+
+  ------------------------------------------------------- */
+
+
+
+  if (numero <= 180) {
+
+    const palabraEscuchar =
+
+      obtenerPalabra(numero);
+
+
 
     return {
+
       tipo: "escuchar",
-      pregunta: "🔊 Escuchá la palabra y elegí exactamente la que escuchaste:",
-      texto: ejercicio.palabra,
+
+      pregunta:
+
+        "Escuchá la palabra y elegí la correcta:",
+
+      texto: palabraEscuchar,
+
       opciones: opcionesConRespuesta(
-        ejercicio.palabra,
-        ejercicio.distractores.filter((opcion) => opcion !== ejercicio.palabra)
+
+        palabraEscuchar,
+
+        [
+
+          "ESCUELA",
+
+          "MARIPOSA",
+
+          "VENTANA",
+
+          "PELOTA",
+
+        ]
+
       ),
-      correcta: ejercicio.palabra,
-      ayuda: "Podés escuchar nuevamente antes de responder. Prestá atención a cada sílaba.",
+
+      correcta: palabraEscuchar,
+
+      ayuda:
+
+        "Primero escuchá y después elegí.",
+
     };
+
   }
 
 
-  /* =========================================================
-     NIVELES 171 - 190
-     PALABRAS DIFÍCILES Y COMPRENSIÓN
-  ========================================================= */
 
-  if (numero <= 190) {
-    const ejercicios = [
-      { texto: "La responsabilidad de cuidar el material es de todos los estudiantes.", pregunta: "¿Qué deben cuidar los estudiantes?", correcta: "el material" },
-      { texto: "La concentración ayuda a comprender mejor una lectura difícil.", pregunta: "¿Qué ayuda a comprender mejor?", correcta: "la concentración" },
-      { texto: "El aprendizaje mejora cuando practicamos un poco todos los días.", pregunta: "¿Cuándo mejora el aprendizaje?", correcta: "cuando practicamos" },
-      { texto: "La comunicación permite compartir ideas con otras personas.", pregunta: "¿Qué permite compartir ideas?", correcta: "la comunicación" },
-      { texto: "La imaginación ayuda a crear historias nuevas y divertidas.", pregunta: "¿Qué ayuda a crear historias?", correcta: "la imaginación" },
-      { texto: "La organización permite encontrar rápidamente los materiales.", pregunta: "¿Qué permite encontrar los materiales?", correcta: "la organización" },
-      { texto: "Una oportunidad para practicar puede ayudar a mejorar una habilidad.", pregunta: "¿Qué puede ayudar a mejorar una habilidad?", correcta: "una oportunidad" },
-      { texto: "La experiencia aumenta cuando aprendemos de nuestros errores.", pregunta: "¿Qué aumenta cuando aprendemos de nuestros errores?", correcta: "la experiencia" },
-      { texto: "La información debe leerse con atención antes de tomar una decisión.", pregunta: "¿Cómo debe leerse la información?", correcta: "con atención" },
-      { texto: "Una aventura extraordinaria puede comenzar con una pequeña idea.", pregunta: "¿Con qué puede comenzar una aventura?", correcta: "una pequeña idea" },
-    ];
+  /* -------------------------------------------------------
 
-    const ejercicio = ejercicios[(numero - 171 + variante) % ejercicios.length];
+     NIVELES 181 - 199
 
-    return {
-      tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.texto,
-      opciones: opcionesConRespuesta(
-        ejercicio.correcta,
-        ["el material", "la concentración", "cuando practicamos", "la comunicación", "la imaginación", "la organización", "una oportunidad", "la experiencia", "con atención", "una pequeña idea"]
-      ),
-      correcta: ejercicio.correcta,
-      ayuda: "Este nivel es más difícil. Leé dos veces si lo necesitás.",
-    };
-  }
-
-
-  /* =========================================================
-     NIVELES 191 - 199
      DESAFÍO AVANZADO
-  ========================================================= */
+
+  ------------------------------------------------------- */
+
+
 
   if (numero <= 199) {
-    const ejercicios = [
-      {
-        texto: "Aunque el camino era largo, Martina continuó caminando porque quería llegar antes del anochecer.",
-        pregunta: "¿Por qué continuó caminando Martina?",
-        correcta: "quería llegar antes del anochecer",
-      },
-      {
-        texto: "Pedro revisó dos veces la tarea antes de entregarla para evitar errores.",
-        pregunta: "¿Para qué revisó la tarea dos veces?",
-        correcta: "evitar errores",
-      },
-      {
-        texto: "Como había olvidado el paraguas, Lucas esperó unos minutos hasta que terminó la lluvia.",
-        pregunta: "¿Por qué esperó Lucas?",
-        correcta: "había olvidado el paraguas",
-      },
-      {
-        texto: "Sofía eligió el libro más corto porque tenía poco tiempo para leerlo.",
-        pregunta: "¿Por qué eligió el libro más corto?",
-        correcta: "tenía poco tiempo",
-      },
-      {
-        texto: "El grupo organizó sus materiales antes de comenzar el proyecto para trabajar mejor.",
-        pregunta: "¿Para qué organizó los materiales?",
-        correcta: "para trabajar mejor",
-      },
-      {
-        texto: "Ana volvió a leer el párrafo porque una palabra importante no había quedado clara.",
-        pregunta: "¿Por qué volvió a leer?",
-        correcta: "una palabra no había quedado clara",
-      },
-      {
-        texto: "Tomás guardó el dibujo con cuidado para que no se doblara dentro de la mochila.",
-        pregunta: "¿Para qué lo guardó con cuidado?",
-        correcta: "para que no se doblara",
-      },
-      {
-        texto: "La familia decidió salir temprano porque el viaje podía durar varias horas.",
-        pregunta: "¿Por qué decidió salir temprano?",
-        correcta: "el viaje podía durar varias horas",
-      },
-      {
-        texto: "El estudiante subrayó las ideas principales para recordarlas cuando estudiara nuevamente.",
-        pregunta: "¿Para qué subrayó las ideas principales?",
-        correcta: "para recordarlas",
-      },
-    ];
 
-    const ejercicio = ejercicios[(numero - 191 + variante) % ejercicios.length];
+    const palabras = frase
+
+      .replace(/[.,!?]/g, "")
+
+      .split(" ");
+
+
+
+    const indice =
+
+      (numero - 181) % palabras.length;
+
+
+
+    const correcta = palabras[indice];
+
+
 
     return {
+
       tipo: "comprension",
-      pregunta: ejercicio.pregunta,
-      texto: ejercicio.texto,
+
+      pregunta:
+
+        "Desafío avanzado: encontrá la palabra correcta.",
+
+      texto: frase,
+
       opciones: opcionesConRespuesta(
-        ejercicio.correcta,
+
+        correcta,
+
         [
-          "evitar errores",
-          "quería llegar antes del anochecer",
-          "había olvidado el paraguas",
-          "tenía poco tiempo",
-          "para trabajar mejor",
-          "una palabra no había quedado clara",
-          "para que no se doblara",
-          "el viaje podía durar varias horas",
-          "para recordarlas",
-          "porque estaba cansado",
+
+          "importante",
+
+          "rápidamente",
+
+          "ventana",
+
+          "escuela",
+
+          "bicicleta",
+
         ]
+
       ),
-      correcta: ejercicio.correcta,
-      ayuda: "🏅 Desafío avanzado: compará cada opción con la información del texto.",
+
+      correcta,
+
+      ayuda:
+
+        "Tomate tu tiempo. No hace falta responder rápido.",
+
     };
+
   }
 
 
-  /* =========================================================
+
+  /* -------------------------------------------------------
+
      NIVEL 200
-     DESAFÍO MAESTRO
-  ========================================================= */
+
+  ------------------------------------------------------- */
+
+
 
   return {
+
     tipo: "comprension",
-    pregunta: "🏆 ¡DESAFÍO MAESTRO! ¿Cuál es la idea principal?",
+
+    pregunta:
+
+      "🏆 ¡Desafío Maestro! ¿Qué idea aparece en el texto?",
+
     texto:
-      "Para aprender algo nuevo, es importante practicar con calma, prestar atención a los detalles y volver a intentarlo cuando una actividad resulta difícil. Cada pequeño avance ayuda a mejorar.",
+
+      "El estudiante leyó lentamente el texto para comprender cada parte.",
+
     opciones: [
-      "Practicar con calma ayuda a aprender.",
-      "Nunca hay que volver a intentar.",
-      "Aprender siempre es fácil.",
-      "Los detalles no son importantes.",
+
+      "comprender",
+
+      "correr",
+
+      "dormir",
+
     ],
-    correcta: "Practicar con calma ayuda a aprender.",
+
+    correcta: "comprender",
+
     ayuda:
-      "🏆 Llegaste al nivel 200. Leé todo el texto, pensá en la idea principal y elegí la mejor respuesta.",
+
+      "Leé todo el texto y pensá cuál es su idea principal.",
+
   };
+
 }
+
 
 
 /* =========================================================
@@ -1086,9 +1321,6 @@ export default function HomeScreen() {
 
   ] = useState("");
 
-  // Variante para que un nivel pueda ofrecer un ejercicio diferente al repetirlo.
-  const [varianteEjercicio, setVarianteEjercicio] = useState(0);
-
   const [modoLectura, setModoLectura] = useState(false);
 
   const [tamanoLectura, setTamanoLectura] = useState(25);
@@ -1115,9 +1347,9 @@ export default function HomeScreen() {
 
   const ejercicioActual = useMemo(
 
-    () => crearEjercicio(nivelActual, varianteEjercicio),
+    () => crearEjercicio(nivelActual),
 
-    [nivelActual, varianteEjercicio]
+    [nivelActual]
 
   );
 
@@ -1476,7 +1708,6 @@ export default function HomeScreen() {
 
 
     setNivelActual(siguiente);
-    setVarianteEjercicio((valor) => valor + 1);
 
     setMensajeJuego("");
 
@@ -1521,7 +1752,6 @@ export default function HomeScreen() {
 
 
     setNivelActual(numero);
-    setVarianteEjercicio((valor) => valor + 1);
 
     setMensajeJuego("");
 
@@ -1605,22 +1835,464 @@ export default function HomeScreen() {
 
 
 
-    if (pantallaNino === "niveles") {
+    if (perfil === "nino" && pantallaNino === "niveles") {
+  return (
+    <Niveles
+      nivelActual={nivelActual}
+      nivelesCompletados={nivelesCompletados}
+      totalNiveles={TOTAL_NIVELES}
+      onSeleccionarNivel={(nivel) => {
+        setNivelActual(nivel);
+        setPantallaNino("jugar");
+      }}
+      onVolver={() => {
+        setPantallaNino("inicio");
+      }}
+    />
+  );
+}
       return (
-        <Niveles
-          nivelActual={nivelActual}
-          nivelesCompletados={nivelesCompletados}
-          totalNiveles={TOTAL_NIVELES}
-          onSeleccionarNivel={(nivel) => {
-            setNivelActual(nivel);
-            setPantallaNino("jugar");
-          }}
-          onVolver={() => {
-            setPantallaNino("inicio");
-          }}
-        />
+
+        <View
+
+          style={
+
+            styles.screenWrapper
+
+          }
+
+        >
+
+          {/* FLECHA SUPERIOR */}
+
+
+
+          <SafeAreaView style={styles.topSafeArea}>
+          <View
+
+            style={
+
+              styles.topBar
+
+            }
+
+          >
+
+            <Pressable
+
+              style={
+
+                styles.topBackButton
+
+              }
+
+              onPress={
+
+                volverInicio
+
+              }
+
+            >
+
+              <Text
+
+                style={
+
+                  styles.topBackText
+
+                }
+
+              >
+
+                ←
+
+              </Text>
+
+            </Pressable>
+
+
+
+            <Text
+
+              style={
+
+                styles.topBarTitle
+
+              }
+
+            >
+
+              Mis niveles
+
+            </Text>
+
+
+
+            <View
+
+              style={
+
+                styles.topBarSpacer
+
+              }
+
+            />
+
+          </View>
+          </SafeAreaView>
+
+
+
+          <ScrollView
+
+            contentContainerStyle={
+
+              styles.ninoContainer
+
+            }
+
+          >
+
+            <Text
+
+              style={
+
+                styles.ninoLogo
+
+              }
+
+            >
+
+              Lectura+ ⭐
+
+            </Text>
+
+
+
+            <Text
+
+              style={
+
+                styles.ninoTitle
+
+              }
+
+            >
+
+              🏆 Mis 200 niveles
+
+            </Text>
+
+
+
+            <View
+
+              style={
+
+                styles.levelCard
+
+              }
+
+            >
+
+              <Text
+
+                style={
+
+                  styles.levelStars
+
+                }
+
+              >
+
+                ⭐ {estrellas} estrellas
+
+              </Text>
+
+
+
+              <Text
+
+                style={
+
+                  styles.progressText
+
+                }
+
+              >
+
+                🏆{" "}
+
+                {
+
+                  nivelesCompletados.length
+
+                }{" "}
+
+                /{" "}
+
+                {TOTAL_NIVELES}{" "}
+
+                niveles completados
+
+              </Text>
+
+
+
+              <Text
+
+                style={
+
+                  styles.progressText
+
+                }
+
+              >
+
+                📈{" "}
+
+                {porcentaje.toFixed(
+
+                  0
+
+                )}
+
+                % completado
+
+              </Text>
+
+            </View>
+
+
+
+            <Text
+
+              style={
+
+                styles.levelIntro
+
+              }
+
+            >
+
+              Completá un nivel para
+
+              desbloquear el siguiente.
+
+            </Text>
+
+
+
+            {niveles.map(
+
+              (numero) => {
+
+                const desbloqueado =
+
+                  nivelDesbloqueado(
+
+                    numero
+
+                  );
+
+
+
+                const completado =
+
+                  nivelesCompletados.includes(
+
+                    numero
+
+                  );
+
+
+
+                return (
+
+                  <Pressable
+
+                    key={numero}
+
+                    style={[
+
+                      styles.levelButton,
+
+                      !desbloqueado &&
+
+                        styles.levelLocked,
+
+                      completado &&
+
+                        styles.levelCompleted,
+
+                    ]}
+
+                    onPress={() =>
+
+                      seleccionarNivel(
+
+                        numero
+
+                      )
+
+                    }
+
+                  >
+
+                    <Text
+
+                      style={
+
+                        styles.levelButtonTitle
+
+                      }
+
+                    >
+
+                      {completado
+
+                        ? "🏆"
+
+                        : desbloqueado
+
+                        ? "🎮"
+
+                        : "🔒"}{" "}
+
+                      Nivel{" "}
+
+                      {numero}
+
+                    </Text>
+
+
+
+                    <Text
+
+                      style={
+
+                        styles.levelButtonText
+
+                      }
+
+                    >
+
+                      {dificultadNivel(
+
+                        numero
+
+                      )}
+
+                    </Text>
+
+
+
+                    <Text
+
+                      style={
+
+                        styles.unlockText
+
+                      }
+
+                    >
+
+                      {completado
+
+                        ? "✅ Completado"
+
+                        : desbloqueado
+
+                        ? "▶️ Jugar"
+
+                        : "🔒 Bloqueado"}
+
+                    </Text>
+
+                  </Pressable>
+
+                );
+
+              }
+
+            )}
+
+
+
+            {mensajeJuego !==
+
+              "" && (
+
+              <View
+
+                style={
+
+                  styles.messageCard
+
+                }
+
+              >
+
+                <Text
+
+                  style={
+
+                    styles.gameMessage
+
+                  }
+
+                >
+
+                  {mensajeJuego}
+
+                </Text>
+
+              </View>
+
+            )}
+
+
+
+            <Pressable
+
+              style={
+
+                styles.backButton
+
+              }
+
+              onPress={
+
+                volverInicio
+
+              }
+
+            >
+
+              <Text
+
+                style={
+
+                  styles.backText
+
+                }
+
+              >
+
+                ← Volver
+
+              </Text>
+
+            </Pressable>
+
+          </ScrollView>
+
+        </View>
+
       );
+
     }
+
 
 
     /* =====================================================
@@ -3210,14 +3882,6 @@ export default function HomeScreen() {
 
     ===================================================== */
 
-    if (pantallaNino === "camara") {
-      return (
-        <Camara
-          onVolver={() => setPantallaNino("inicio")}
-        />
-      );
-    }
-
     return (
       <NinosHome
         nombre={nombre}
@@ -3237,10 +3901,6 @@ export default function HomeScreen() {
 
         onProgreso={() =>
           setPantallaNino("progreso")
-        }
-
-        onCamara={() =>
-          setPantallaNino("camara")
         }
 
         onCambiarPerfil={() => {
@@ -4032,7 +4692,7 @@ export default function HomeScreen() {
 
   );
 
-}
+
 
 
 /* =========================================================

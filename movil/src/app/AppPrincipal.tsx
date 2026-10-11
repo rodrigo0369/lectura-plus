@@ -24,6 +24,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import NinosHome from "../componentes/ninos/NinosHome";
 import Niveles from "../componentes/ninos/Niveles";
 import Camara from "../componentes/ninos/Camara";
+import AdolescentesHome from "../componentes/adolescentes/AdolescentesHome";
 
 
 type Perfil = "nino" | "adolescente" | "adulto" | "";
@@ -1594,6 +1595,19 @@ export default function HomeScreen() {
   ======================================================= */
 
 
+
+  // La cámara se comparte entre los perfiles de niños y adolescentes.
+  // Esta condición debe ir antes de los bloques de cada perfil.
+  if (
+    pantallaNino === "camara" &&
+    (perfil === "nino" || perfil === "adolescente")
+  ) {
+    return (
+      <Camara
+        onVolver={() => setPantallaNino("inicio")}
+      />
+    );
+  }
 
   if (perfil === "nino") {
 
@@ -3210,14 +3224,6 @@ export default function HomeScreen() {
 
     ===================================================== */
 
-    if (pantallaNino === "camara") {
-      return (
-        <Camara
-          onVolver={() => setPantallaNino("inicio")}
-        />
-      );
-    }
-
     return (
       <NinosHome
         nombre={nombre}
@@ -3262,240 +3268,14 @@ export default function HomeScreen() {
 
 
 
-  if (
-
-    perfil ===
-
-    "adolescente"
-
-  ) {
-
-    return (
-
-      <ScrollView
-
-        contentContainerStyle={
-
-          styles.adolescenteContainer
-
-        }
-
-      >
-
-        <Text
-
-          style={
-
-            styles.logo
-
-          }
-
-        >
-
-          Lectura+
-
-        </Text>
-
-
-
-        <Text
-
-          style={
-
-            styles.title
-
-          }
-
-        >
-
-          Hola,{" "}
-
-          {nombre ||
-
-            "usuario"}{" "}
-
-          👋
-
-        </Text>
-
-
-
-        <Text
-
-          style={
-
-            styles.subtitle
-
-          }
-
-        >
-
-          Tu espacio de lectura
-
-        </Text>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            📚 Mis lecturas
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            🧠 Desafíos
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-          onPress={() =>
-
-            hablar(
-
-              textoLectura
-
-            )
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            🔊 Escuchar un texto
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            📊 Mi progreso
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.backButton
-
-          }
-
-          onPress={() =>
-
-            setPerfil("")
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.backText
-
-            }
-
-          >
-
-            ← Cambiar perfil
-
-          </Text>
-
-        </Pressable>
-
-      </ScrollView>
-
-    );
-
-  }
-
+  if (perfil === "adolescente") {
+  return (
+    <AdolescentesHome
+      onVolver={() => setPerfil("")}
+      onCamara={() => setPantallaNino("camara")}
+    />
+  );
+}
 
 
   /* =======================================================

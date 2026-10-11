@@ -25,6 +25,7 @@ import NinosHome from "../componentes/ninos/NinosHome";
 import Niveles from "../componentes/ninos/Niveles";
 import Camara from "../componentes/ninos/Camara";
 import AdolescentesHome from "../componentes/adolescentes/AdolescentesHome";
+import AdultosHome from "../componentes/adultos/AdultosHome";
 
 
 type Perfil = "nino" | "adolescente" | "adulto" | "";
@@ -1600,7 +1601,7 @@ export default function HomeScreen() {
   // Esta condición debe ir antes de los bloques de cada perfil.
   if (
     pantallaNino === "camara" &&
-    (perfil === "nino" || perfil === "adolescente")
+    (perfil === "nino" || perfil === "adolescente" || perfil === "adulto")
   ) {
     return (
       <Camara
@@ -3279,249 +3280,21 @@ export default function HomeScreen() {
 
 
   /* =======================================================
-
      ADULTO
-
   ======================================================= */
 
-
-
-  if (
-
-    perfil ===
-
-    "adulto"
-
-  ) {
-
+  if (perfil === "adulto") {
     return (
-
-      <ScrollView
-
-        contentContainerStyle={
-
-          styles.adultoContainer
-
-        }
-
-      >
-
-        <Text
-
-          style={
-
-            styles.logo
-
-          }
-
-        >
-
-          Lectura+
-
-        </Text>
-
-
-
-        <Text
-
-          style={
-
-            styles.title
-
-          }
-
-        >
-
-          Hola,{" "}
-
-          {nombre ||
-
-            "usuario"}{" "}
-
-          👋
-
-        </Text>
-
-
-
-        <Text
-
-          style={
-
-            styles.subtitle
-
-          }
-
-        >
-
-          Herramientas para una
-
-          lectura más cómoda
-
-        </Text>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            📄 Adaptar un texto
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            📷 Escanear texto
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-          onPress={() =>
-
-            hablar(
-
-              textoLectura
-
-            )
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            🔊 Escuchar texto
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.button
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.buttonText
-
-            }
-
-          >
-
-            📊 Mi progreso
-
-          </Text>
-
-        </Pressable>
-
-
-
-        <Pressable
-
-          style={
-
-            styles.backButton
-
-          }
-
-          onPress={() =>
-
-            setPerfil("")
-
-          }
-
-        >
-
-          <Text
-
-            style={
-
-              styles.backText
-
-            }
-
-          >
-
-            ← Cambiar perfil
-
-          </Text>
-
-        </Pressable>
-
-      </ScrollView>
-
+      <AdultosHome
+        nombre={nombre}
+        onVolver={() => {
+          setPerfil("");
+          setPantallaNino("inicio");
+        }}
+        onCamara={() => setPantallaNino("camara")}
+      />
     );
-
   }
-
 
 
   /* =======================================================
